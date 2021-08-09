@@ -1,0 +1,67 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: g++.exe build active file",
+			"command": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe",
+			"args": [
+				"-g",
+				"${fileDirname}/*.cpp",
+				"${workspaceFolder}/src/minipanel/*.cpp",
+				"${workspaceFolder}/src/xsplit_extension/dependencies/serial/src/*.cc",
+				"${workspaceFolder}/src/xsplit_extension/dependencies/serial/src/impl/*.cc",
+				"${workspaceFolder}/src/xsplit_extension/dependencies/serial/src/impl/list_ports/*.cc",
+				"-lole32",
+				"-lsetupapi",
+				"-lhid",
+				"-I${workspaceFolder}/src/minipanel",
+				"-I${workspaceFolder}/src/xsplit_extension/dependencies/serial/include",
+				"-o",
+				"${workspaceFolder}\\src\\xsplit_extension\\bin\\${fileBasenameNoExtension}.exe"
+			],
+			"options": {
+				"cwd": "${fileDirname}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: \"C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe\""
+		},
+		{
+			"type": "cppbuild",
+			"label": "C/C++: g++.exe build active file as DLL",
+			"command": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe",
+			"args": [
+				"-shared",
+				"${fileDirname}/*.cpp",
+				"${workspaceFolder}/src/minipanel/*.cpp",
+				"${workspaceFolder}/src/xsplit_extension/dependencies/serial/src/*.cc",
+				"${workspaceFolder}/src/xsplit_extension/dependencies/serial/src/impl/*.cc",
+				"${workspaceFolder}/src/xsplit_extension/dependencies/serial/src/impl/list_ports/*.cc",
+				"-lole32",
+				"-lsetupapi",
+				"-lhid",
+				"-I${workspaceFolder}/src/minipanel",
+				"-I${workspaceFolder}/src/xsplit_extension/dependencies/serial/include",
+				"-o",
+				"${workspaceFolder}\\src\\xsplit_extension\\bin\\${fileBasenameNoExtension}.dll"
+			],
+			"options": {
+				"cwd": "${fileDirname}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: \"C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe\""
+		}
+	]
+}
