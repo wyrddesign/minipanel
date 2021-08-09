@@ -1,0 +1,29 @@
+{
+    "name": "MiniPanel Extension",
+    "description": "",
+    "version": "1.0",
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "js": ["storage.js"],
+            "matches": ["https://meet.google.com/*"]
+        },
+        {
+            "js": ["message.js"],
+            "matches": ["https://meet.google.com/*"]
+        },
+        {
+            "js": ["minipanel.js"],
+            "matches": ["https://meet.google.com/*"]
+        },
+        {
+            "js": ["meet.js"],
+            "matches": ["https://meet.google.com/*"]
+        }
+    ],
+    "permissions": ["storage", "tabs", "scripting"],
+    "options_page": "options.html"
+}
