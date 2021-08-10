@@ -23,14 +23,14 @@ class MiniPanelStorage {
         this.key = key;
     }
 
-    createId(serialPort) {
-        const {usbProductId, usbVendorId} = serialPort.getInfo();
+    createId(info) {
+        const {usbProductId, usbVendorId} = info;
         return usbProductId + ":" + usbVendorId;
     }
 
     async set(miniPanel) {
         if (miniPanel) {
-            const id = this.createId(miniPanel.serialPort);
+            const id = this.createId(miniPanel.serial.getInfo());
             await chrome.storage.local.setAsync({[this.key]: id});
         }
     }
@@ -40,8 +40,7 @@ class MiniPanelStorage {
         if (id) {
             const serialPorts = await navigator.serial.getPorts();
             for (const serialPort of serialPorts) {
-                console.log(id, this.createId(serialPort));
-                if (id === this.createId(serialPort)) {
+                if (id === this.createId(serialPort.getInfo())) {
                     return MiniPanel.fromSerialPort(serialPort);
                 }
             }
