@@ -1,22 +1,74 @@
-const START_MSG_MARKER = 0xff;
-const MSG_TYPE_PROBE = 0x00;
-const MSG_TYPE_KEY_ON = 0x01;
-const MSG_TYPE_KEY_OFF = 0x02;
-const MSG_TYPE_MODE_SINGLE_KEY = 0x03;
-const MSG_TYPE_MODE_MULTI_KEY = 0x04;
+const START_MSG_MARKER =            0xff;
+const MSG_TYPE_PROBE =              0x00;
+const MSG_TYPE_KEY_PRESS =          0x01;
+const MSG_TYPE_KEY_ON =             0x02;
+const MSG_TYPE_KEY_OFF =            0x03;
+const MSG_TYPE_MODE =               0x04;
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+const MSG_MODE_SINGLE_KEY =         0x00;
+const MSG_MODE_MULTI_KEY =          0x01;
+
+function parseMessage(type, data) {
+    switch(type) {
+        case MSG_TYPE_PROBE:
+            return new ProbeMessage();
+        case MSG_TYPE_KEY_PRESS:
+            return new KeyPressMessage(data);
+        case MSG_TYPE_KEY_ON:
+            return new KeyOnMessage(data);
+        case MSG_TYPE_KEY_OFF:
+            return new KeyOffMessage(data);
+        case MSG_TYPE_MODE:
+            return new ModeMessage(data);
+        default:
+            return new Message(type, data);
+    }
+}
+
+function dump(type, data) {
+    return new Uint8Array([START_MSG_MARKER, type, data]);
+}
+
+function dumpMessage(message) {
+    switch(true) {
+        case message instanceof ProbeMessage:
+            return dump(MSG_TYPE_PROBE, 0x0);
+        case message instanceof KeyPressMessage:
+            return dump(MSG_TYPE_KEY_PRESS, message.idx);
+        case message instanceof KeyOnMessage:
+            return dump(MSG_TYPE_KEY_ON, message.idx);
+        case message instanceof KeyOffMessage:
+            return dump(MSG_TYPE_KEY_OFF, message.idx);
+        case message instanceof ModeMessage:
+            return dump(MSG_TYPE_MODE, message.mode);
+        case message instanceof Message:
+            return dump(message.type, message.data);
+        default:
+           throw Error();
+    }
 }
 
 function ProbeMessage() {
-    this.type = MSG_TYPE_PROBE;
-    this.data = 0x0;
+}
+
+function KeyPressMessage(idx) {
+    this.idx = idx;
+}
+
+function KeyPressMessage(idx) {
+    this.idx = idx;
 }
 
 function KeyOnMessage(idx) {
-    this.type = MSG_TYPE_KEY_ON;
-    this.data = idx;
+    this.idx = data;
+}
+
+function KeyOffMessage(idx) {
+    this.idx = idx;
+}
+
+function ModeMessage(mode) {
+    this.mode = mode;
 }
 
 function Message(type, data) {
@@ -48,60 +100,7 @@ function* parseMessages() {
         } else if (state === "awaitData") {
             data = byte;
             state = "idle";
-            message = new Message(type, data);
+            message = parseMessage(type, data);
         }
-    }
-}
-
-SerialPort.prototype.sendMessage = async function(message) {
-    const writer = this.writable.getWriter();
-    await writer.write(new Uint8Array([START_MSG_MARKER, message.type, message.data]));
-    writer.releaseLock();
-}
-
-SerialPort.prototype.receiveMessages = async function*() {
-    const bytes = [];
-    const messageParser = parseMessages();
-    messageParser.next();
-    let reader;
-
-    try {
-        while(this.readable) {
-            reader = this.readable.getReader();   
-            const { value, done } = await reader.read();
-            reader.releaseLock();
-            bytes.push(...value);
-            while(bytes.length) {
-                const byte = bytes.shift();
-                const {value} = messageParser.next(byte);
-                if (value) {
-                    yield value;
-                }
-            }
-            if (done) {
-                break;
-            }
-        }
-    } finally {
-        if (reader) {
-            reader.releaseLock();
-        }
-    }
-}
-
-SerialPort.prototype.probe = async function() {
-    await this.open({ baudRate: 9600 });
-
-    // Wait for the Arduino to reset
-    await sleep(3000);
-    await this.sendMessage(new ProbeMessage());
-    const {value} = await this.receiveMessages().next();
- 
-    // Return true if a MiniPanel was found
-    if (value && value.type === MSG_TYPE_PROBE) {
-        return true;
-    } else {
-        this.close();
-        return false;
     }
 }
