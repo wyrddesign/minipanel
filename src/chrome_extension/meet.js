@@ -1,16 +1,35 @@
-function $x(path) {
-    const results = [];
-    const iterator = document.evaluate(path, document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
-    let node = iterator.iterateNext();
-    while(node) {
-        results.push(node);
-        node = iterator.iterateNext();
-    }
-    return results;
-}
-
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function* nodeAvailable(filterCallback) {
+    let lastAddedNode = undefined;
+    while(true) {
+        if (lastAddedNode && lastAddedNode.parentNode) {
+            yield Promise.resolve(lastAddedNode);
+        } else {
+            yield new Promise((resolve, reject) => {
+                var observer = new MutationObserver((mutations, mutationObserver) => {
+                    mutations.forEach((mutation) => {
+                        mutation.addedNodes.forEach((node) => {
+                            if (filterCallback(node)) {
+                                mutationObserver.disconnect();
+                                lastAddedNode = node;
+                                resolve(node);
+                            }
+                        });
+                        // mutation.removedNodes.forEach((node) => {
+                        //     if (filterCallback(node)) {
+                        //         mutationObserver.disconnect();
+                        //         lastAddedNode = undefined;
+                        //     }
+                        // });
+                    });
+                });
+                observer.observe(document, {childList: true, subtree: true});
+            });
+        }
+    }
 }
 
 class NoButtonFoundException extends Error {}
@@ -19,31 +38,24 @@ class Muteable {
     constructor(labelMute, labelUnmute) {
         this.labelMute = labelMute;
         this.labelUnmute = labelUnmute;
-        this.button = undefined;
+        // Meet uses the same node for muting and unmuting
+        this.nodeAvailableIter = nodeAvailable((node) => { 
+            const label = node.getAttribute && node.getAttribute("aria-label");
+            return label && (label.includes(this.labelMute) || label.includes(this.labelUnmute));
+        });
+        // Start searching for the node
+        this.nodeAvailableIter.next();
         this.isAwaitingAnimation = false;
     }
 
-    async findButton() {
-        const onButtonFound = (button) => {
-            this.button = button;
-        }
-        const labelMute = this.labelMute;
-        const labelUmute = this.labelUnmute;
-        return new Promise((resolve, reject) => {
-            var observer = new MutationObserver((mutations, me) => {
-                const button = $x("//*[contains(@aria-label, '" + labelMute + "')]")[0] || $x("//*[contains(@aria-label, '" + labelUmute + "')]")[0];
-                if (button) {
-                    onButtonFound(button);
-                    me.disconnect();
-                    resolve();
-                }
-            });
-            observer.observe(document, {childList: true, subtree: true});
-        });
+    async getButton() {
+        const {value} = await this.nodeAvailableIter.next();
+        return value;
     }
 
-    isMuted() {
-        return this.button.getAttribute("aria-label").includes(this.labelUnmute);
+    async isMuted() {
+        const button = await this.getButton();
+        return button.getAttribute("aria-label").includes(this.labelUnmute);
     }
 
     isToggling() {
@@ -56,7 +68,8 @@ class Muteable {
      * @returns whether this device is currently muted after the toggle
      */
     async toggle() {
-        this.button.click();
+        const button = await this.getButton();
+        button.click();
         this.isAwaitingAnimation = true;
         await sleep(200);
         this.isAwaitingAnimation = false;
@@ -68,14 +81,12 @@ async function listenForever() {
     const camera = new Muteable("Turn off camera", "Turn on camera");
     const microphone = new Muteable("Turn off microphone", "Turn on microphone");
 
-    await camera.findButton();
-    await microphone.findButton();
-
     // Order these left to right, the same as in the Meet UI
     const deviceMap = [microphone, camera];
 
     let miniPanel = await MiniPanel.create();
-    console.log("Created MiniPanel", miniPanel);
+    console.log("Created MiniPanel");
+
     if (miniPanel) {
         miniPanel.setModeMultiKey();
 
@@ -86,8 +97,8 @@ async function listenForever() {
         }
 
         await miniPanel.listenForever(async (message) => {
-            if (message.type == MSG_TYPE_KEY_ON) {
-                const idx = message.data;
+            if (message instanceof KeyPressMessage) {
+                const idx = message.idx;
                 const device = deviceMap[idx];
                 if (device && !device.isToggling()) {
                     const isMuted = await device.toggle();
