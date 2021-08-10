@@ -29,7 +29,7 @@ static uint8_t serialBuf[8];
 static Message *sending;
 static Message *receiving;
 static RcvState rcvState;
-static Mode mode;
+static KeyMode keyMode;
 
 bool rcvMessage(Message *msg, RcvState &rcvState) {
   if (!Serial.available()) {
@@ -42,33 +42,23 @@ void sndMessage(Message *msg) {
   Serial.write(serialBuf, writeMessage(msg, serialBuf));
 }
 
-void awaitConnection() {
-  while(1) {
-    if (rcvMessage(receiving, rcvState) && receiving->type == MSG_TYPE_PROBE) {
-        // Send the same message back  
-        sndMessage(receiving);
-        return;
-    }
-    delay(50);
-  }
-}
-
 void toggleKey(uint8_t idx, bool isOn) {
-  switch(mode) {
-    case Mode::SingleKey:
+  switch(keyMode) {
+    case KeyMode::SingleKey:
       for (uint8_t i=0; i<NUM_BUTTONS; i+=1) {
         digitalWrite(LED_PINS[i], i == idx && isOn ? HIGH : LOW);
       }
       break;
-    case Mode::MultiKey:
+    case KeyMode::MultiKey:
       digitalWrite(LED_PINS[idx], isOn ? HIGH : LOW);
       break;
   }
 }
 
 void onProbe(Message *msg) {
-  // Send the same message back
-  sndMessage(msg);
+    sending->type = MSG_TYPE_PROBE;
+    sending->data = VERSION;
+    sndMessage(sending);
 }
 
 void onKeyOn(Message *msg) {
@@ -79,12 +69,15 @@ void onKeyOff(Message *msg) {
   toggleKey(msg->data, false);
 }
 
-void onModeSingleKey(Message *msg) {
-  mode = Mode::SingleKey;
-}
-
-void onModeMultiKey(Message *msg) {
-  mode = Mode::MultiKey;
+void onKeyMode(Message *msg) {
+  switch(msg->data) {
+    case MSG_KEY_MODE_SINGLE_KEY:
+      keyMode = KeyMode::SingleKey;
+      break;
+    case MSG_KEY_MODE_MULTI_KEY:
+      keyMode = KeyMode::MultiKey;
+      break;
+  }
 }
 
 void onMessage(Message *msg) {
@@ -98,15 +91,23 @@ void onMessage(Message *msg) {
     case MSG_TYPE_KEY_OFF:
       onKeyOff(msg);
       break;
-    case MSG_TYPE_MODE_SINGLE_KEY:
-      onModeSingleKey(msg);
-      break;
-    case MSG_TYPE_MODE_MULTI_KEY:
-      onModeMultiKey(msg);
+    case MSG_TYPE_KEY_MODE:
+      onKeyMode(msg);
       break;
     default:
       // Message not supported
       break;
+  }
+}
+
+void awaitConnection() {
+  while(1) {
+    if (rcvMessage(receiving, rcvState) && receiving->type == MSG_TYPE_PROBE && receiving->data == MSG_PROBE_QUERY_VERSION) {
+        // Send the version of this panel back
+        onProbe(receiving);
+        return;
+    }
+    delay(5);
   }
 }
 
@@ -120,7 +121,7 @@ void setup() {
   sending = new Message();
   receiving = new Message();
   rcvState = RcvState::Idle;
-  mode = Mode::SingleKey;
+  keyMode = KeyMode::SingleKey;
   Serial.begin(9600);
   // awaitConnection();
 }

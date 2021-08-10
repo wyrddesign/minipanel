@@ -11,7 +11,9 @@ const uint8_t MSG_TYPE_KEY_ON =           0x02;
 const uint8_t MSG_TYPE_KEY_OFF =          0x03;
 const uint8_t MSG_TYPE_KEY_MODE =             0x04;
 
-const uint8_t MSG_PROBE_VERSION_1 =       0x01;
+const uint8_t MSG_PROBE_QUERY_VERSION =   0x00;
+const uint8_t MSG_PROBE_V1 =              0x01;
+const uint8_t MSG_PROBE_V2 =              0x02;
 
 const uint8_t MSG_KEY_MODE_SINGLE_KEY =       0x00;
 const uint8_t MSG_KEY_MODE_MULTI_KEY =        0x01;
