@@ -14,7 +14,7 @@ chooseMiniPanelNode.addEventListener("click", async () => {
         await miniPanelStorage.set(miniPanel);
         await setMiniPanelId();
         miniPanel.listenForever(async (message) => {
-            miniPanelMessagesNode.textContent += "type: " + message.type + " data: " + message.data + "\n";
+            miniPanelMessagesNode.textContent += JSON.stringify(message) + "\n";
         });
     }
 });
