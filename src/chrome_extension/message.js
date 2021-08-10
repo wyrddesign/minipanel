@@ -3,10 +3,10 @@ const MSG_TYPE_PROBE =              0x00;
 const MSG_TYPE_KEY_PRESS =          0x01;
 const MSG_TYPE_KEY_ON =             0x02;
 const MSG_TYPE_KEY_OFF =            0x03;
-const MSG_TYPE_MODE =               0x04;
+const MSG_TYPE_KEY_MODE =           0x04;
 
-const MSG_MODE_SINGLE_KEY =         0x00;
-const MSG_MODE_MULTI_KEY =          0x01;
+const MSG_KEY_MODE_SINGLE_KEY =     0x00;
+const MSG_KEY_MODE_MULTI_KEY =      0x01;
 
 function parseMessage(type, data) {
     switch(type) {
@@ -18,8 +18,8 @@ function parseMessage(type, data) {
             return new KeyOnMessage(data);
         case MSG_TYPE_KEY_OFF:
             return new KeyOffMessage(data);
-        case MSG_TYPE_MODE:
-            return new ModeMessage(data);
+        case MSG_TYPE_KEY_MODE:
+            return new KeyModeMessage(data);
         default:
             return new Message(type, data);
     }
@@ -39,8 +39,8 @@ function dumpMessage(message) {
             return dump(MSG_TYPE_KEY_ON, message.idx);
         case message instanceof KeyOffMessage:
             return dump(MSG_TYPE_KEY_OFF, message.idx);
-        case message instanceof ModeMessage:
-            return dump(MSG_TYPE_MODE, message.mode);
+        case message instanceof KeyModeMessage:
+            return dump(MSG_TYPE_KEY_MODE, message.keyMode);
         case message instanceof Message:
             return dump(message.type, message.data);
         default:
@@ -67,8 +67,8 @@ function KeyOffMessage(idx) {
     this.idx = idx;
 }
 
-function ModeMessage(mode) {
-    this.mode = mode;
+function KeyModeMessage(keyMode) {
+    this.keyMode = keyMode;
 }
 
 function Message(type, data) {

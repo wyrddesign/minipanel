@@ -111,12 +111,12 @@ class MiniPanel {
         this.serial = new MiniPanelSerial(serialPort);
     }
 
-    async setModeMultiKey() {
-        await this.serial.send(new ModeMessage(MSG_MODE_MULTI_KEY));
+    async setKeyModeMultiKey() {
+        await this.serial.send(new KeyModeMessage(MSG_KEY_MODE_MULTI_KEY));
     }
 
-    async setModeSingleKey() {
-        await this.serial.send(new ModeMessage(MSG_MODE_SINGLE_KEY));
+    async setKeyModeSingleKey() {
+        await this.serial.send(new KeyModeMessage(MSG_KEY_MODE_SINGLE_KEY));
     }
 
     async send(message) {

@@ -88,7 +88,7 @@ async function listenForever() {
     console.log("Created MiniPanel");
 
     if (miniPanel) {
-        miniPanel.setModeMultiKey();
+        miniPanel.setKeyModeMultiKey();
 
         // Set the initial states
         for (const [idx, device] in deviceMap.entries()) {
