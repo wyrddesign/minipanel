@@ -123,7 +123,7 @@ void setup() {
   rcvState = RcvState::Idle;
   keyMode = KeyMode::SingleKey;
   Serial.begin(9600);
-  // awaitConnection();
+  awaitConnection();
 }
 
 void loop() {
