@@ -6,14 +6,16 @@
 
 const uint8_t START_MSG_MARKER =          0xff;
 const uint8_t MSG_TYPE_PROBE =            0x00;
-const uint8_t MSG_TYPE_KEY_ON =           0x01;
-const uint8_t MSG_TYPE_KEY_OFF =          0x02;
+const uint8_t MSG_TYPE_KEY_PRESS =        0x01;
+const uint8_t MSG_TYPE_KEY_ON =           0x02;
+const uint8_t MSG_TYPE_KEY_OFF =          0x03;
+const uint8_t MSG_TYPE_MODE =             0x04;
 
-// Only allow one key to be lit or pressed at a time.
-const uint8_t MSG_TYPE_MODE_SINGLE_KEY =  0x03;
+const uint8_t MSG_PROBE_VERSION_1 =       0x01;
 
-// Allow any number of keys to be lit or pressed at the same time.
-const uint8_t MSG_TYPE_MODE_MULTI_KEY =   0x04;
+const uint8_t MSG_MODE_SINGLE_KEY =       0x00;
+const uint8_t MSG_MODE_MULTI_KEY =        0x01;
+
 
 struct Message {
   uint8_t type;
@@ -21,8 +23,11 @@ struct Message {
 };
 
 enum class Mode {
+  // Only allow one key to be lit or pressed at a time.
   SingleKey,
-  MultiKey
+  
+  // Allow any number of keys to be lit or pressed at the same time.
+  MultiKey 
 };
 
 enum class RcvState {
