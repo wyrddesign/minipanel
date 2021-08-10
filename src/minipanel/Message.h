@@ -9,12 +9,12 @@ const uint8_t MSG_TYPE_PROBE =            0x00;
 const uint8_t MSG_TYPE_KEY_PRESS =        0x01;
 const uint8_t MSG_TYPE_KEY_ON =           0x02;
 const uint8_t MSG_TYPE_KEY_OFF =          0x03;
-const uint8_t MSG_TYPE_MODE =             0x04;
+const uint8_t MSG_TYPE_KEY_MODE =             0x04;
 
 const uint8_t MSG_PROBE_VERSION_1 =       0x01;
 
-const uint8_t MSG_MODE_SINGLE_KEY =       0x00;
-const uint8_t MSG_MODE_MULTI_KEY =        0x01;
+const uint8_t MSG_KEY_MODE_SINGLE_KEY =       0x00;
+const uint8_t MSG_KEY_MODE_MULTI_KEY =        0x01;
 
 
 struct Message {
@@ -22,7 +22,7 @@ struct Message {
   uint8_t data;
 };
 
-enum class Mode {
+enum class KeyMode {
   // Only allow one key to be lit or pressed at a time.
   SingleKey,
   
