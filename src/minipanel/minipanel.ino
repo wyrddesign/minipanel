@@ -147,7 +147,7 @@ void loop() {
   if (lastPressedIdx != -1) {
     for (uint8_t i=0; i<NUM_BUTTONS; i+=1) {
       if (wasPressed[i]) {
-          sending->type = MSG_TYPE_KEY_ON;
+          sending->type = MSG_TYPE_KEY_PRESS;
           sending->data = i;
           sndMessage(sending);
       }
