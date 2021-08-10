@@ -1,9 +1,26 @@
 #include "Message.h"
 
-const uint8_t NUM_BUTTONS = 3;
+// The three button Arduino Nano-based minipanel. This was wired upside-down.
+// #define MINIPANEL_V1_3_BTN
 
+// The two button Arduino Nano-based minipanel.
+#define MINIPANEL_V1_2_BTN
+
+// The two button Qt Py-based minipanel.
+// #define MINIPANEL_V2_2_BTN
+
+#ifdef MINIPANEL_V1_3_BTN
+const uint8_t VERSION = MSG_PROBE_V1;
+const uint8_t NUM_BUTTONS = 3;
 const uint8_t SWITCH_PINS[NUM_BUTTONS] = {2, 4, 6};
 const uint8_t LED_PINS[NUM_BUTTONS] = {3, 5, 7};
+#endif
+#ifdef MINIPANEL_V1_2_BTN
+const uint8_t VERSION = MSG_PROBE_V1;
+const uint8_t NUM_BUTTONS = 2;
+const uint8_t SWITCH_PINS[NUM_BUTTONS] = {7, 5};
+const uint8_t LED_PINS[NUM_BUTTONS] = {8, 6};
+#endif
 
 static uint8_t values[NUM_BUTTONS];
 static uint8_t lastValues[NUM_BUTTONS];
