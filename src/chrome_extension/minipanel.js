@@ -83,9 +83,9 @@ class MiniPanel {
         await serial.send(new ProbeMessage(MSG_PROBE_QUERY_VERSION));
         const {value} = await serial.receive().next();
     
-        // Return the MiniPanel version if found
+        // Return the MiniPanel probe message if found
         if (value instanceof ProbeMessage) {
-            return value.version;
+            return value;
         } else {
             serial.close();
             return false;
@@ -94,9 +94,10 @@ class MiniPanel {
 
     static async fromSerialPort(serialPort) {
         if (serialPort) {
-            const version = await this.probe(serialPort);
-            if (version) {
-                return new MiniPanel(version, serialPort);
+            const probeMessage = await this.probe(serialPort);
+            if (probeMessage) {
+                const {version, numButtons} = probeMessage;
+                return new MiniPanel(version, numButtons, serialPort);
             }
         }
     }
@@ -140,8 +141,9 @@ class MiniPanel {
         }
     }
 
-    constructor(version, serialPort) {
+    constructor(version, numButtons, serialPort) {
         this.version = version;
+        this.numButtons = numButtons;
         this.serial = new MiniPanelSerial(serialPort);
     }
 

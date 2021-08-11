@@ -16,8 +16,8 @@ function parseMessage(type, data) {
     switch(type) {
         case MSG_TYPE_PROBE:
             const version = data & 0xf;
-            const numButtons = data & 0x10;
-            return new ProbeMessage(version, numButtons);
+            const maxButtonIdx = data >> 4;
+            return new ProbeMessage(version, maxButtonIdx + 1);
         case MSG_TYPE_KEY_PRESS:
             return new KeyPressMessage(data);
         case MSG_TYPE_KEY_ON:

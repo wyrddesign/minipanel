@@ -43,8 +43,8 @@ function logReceive(text) {
     node.setAttribute("class", "receiveMessage");
 }
 
-function logVersion(miniPanel) {
-    log("MiniPanel v" + miniPanel.version + " found.");
+function logInfo(miniPanel) {
+    log("MiniPanel v" + miniPanel.version + " with " + miniPanel.numButtons + " buttons     found.");
 }
 
 async function saveToStorage(miniPanel) {
@@ -60,7 +60,7 @@ chooseNode.addEventListener("click", async () => {
         miniPanel = await MiniPanel.get({shouldPromptUser: true, shouldUseCached: false});
         if (miniPanel) {
             disconnectNode.setEnabled(true);
-            logVersion(miniPanel);
+            logInfo(miniPanel);
             await saveToStorage(miniPanel);
             log("This MiniPanel will now be used during Meet calls.");
             await miniPanel.close();
@@ -82,7 +82,7 @@ connectNode.addEventListener("click", async () => {
     log("Probing for MiniPanel.");
     for await (miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
         disconnectNode.setEnabled(true);
-        logVersion(miniPanel);
+        logInfo(miniPanel);
         logSend("Setting single key mode.\n");
         await miniPanel.setKeyModeSingleKey();
         await miniPanel.listenForever(async (message) => {
