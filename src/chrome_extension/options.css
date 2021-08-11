@@ -1,0 +1,66 @@
+section {
+    padding: 1ch;
+}
+button.begin {
+    background-color:skyblue;
+}
+button.end {
+    background-color:salmon;
+}
+button {
+    padding: 1ch;
+    border-width: 1px;
+    border-radius: 2px;
+    box-shadow: 2px 2px gray;
+    background-color:linen;
+}
+button:active {
+    transform: translate(2px, 2px);
+}
+button:disabled {
+    box-shadow: 2px 2px gray;
+    background-color: whitesmoke;
+}
+label {
+    padding: 0;
+    font-size: 1.5em;
+}
+section input {
+    display: block;
+    padding: 1ch;
+    margin-bottom: 1ch;
+}
+section button {
+    margin-right: 0.25ch;
+}
+#log {
+    margin: 0;
+    padding: 0;
+}
+.logMessage, .sendMessage, .receiveMessage {
+    font-family: monospace;
+    font-size: 1.25em;
+    padding-top: 0.5em;
+}
+li {
+    list-style-type: none;
+}
+li.logMessage::before, li.sendMessage::before, li.receiveMessage::before {
+    border-radius: 1ch;
+    padding-inline: 1ch;
+    margin-inline-end: 1ch;
+    font-weight: bold;
+    color: white;
+}
+li.logMessage::before {
+    content: "-";
+    background: goldenrod;
+}
+li.sendMessage::before {
+    content: ">";
+    background:skyblue;
+}
+li.receiveMessage::before {
+    content: "<";
+    background:salmon;
+}
