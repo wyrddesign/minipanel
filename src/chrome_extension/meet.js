@@ -96,15 +96,12 @@ async function listenForever() {
             miniPanel.send(new Message(isMuted ? MSG_TYPE_KEY_ON : MSG_TYPE_KEY_OFF, idx));
         }
 
-        await miniPanel.listenForever(async (message) => {
-            if (message instanceof KeyPressMessage) {
-                const idx = message.idx;
-                const device = deviceMap[idx];
-                if (device && !device.isToggling()) {
-                    const isMuted = await device.toggle();
-                    return new Message(isMuted ? MSG_TYPE_KEY_ON : MSG_TYPE_KEY_OFF, idx);
-                }
-            }
+        await miniPanel.onKeyPressForever(async (idx) => {
+            const device = deviceMap[idx];
+            if (device && !device.isToggling()) {
+                const isMuted = await device.toggle();
+                return new Message(isMuted ? MSG_TYPE_KEY_ON : MSG_TYPE_KEY_OFF, idx);
+            }                
         });
     }
 }

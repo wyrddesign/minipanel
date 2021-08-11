@@ -136,6 +136,18 @@ class MiniPanel {
         }
     }
 
+    async onKeyPressForever(callback) {
+        await this.listenForever(async (message) => {
+            if (message instanceof KeyPressMessage) {
+                const idx = message.idx;
+                const sendMessage = await callback(idx);
+                if (sendMessage) {
+                    return sendMessage;
+                }
+            }
+        });
+    }
+
     async close() {
         await this.serial.close();
     }
