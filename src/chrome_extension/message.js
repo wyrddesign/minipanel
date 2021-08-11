@@ -68,7 +68,7 @@ function KeyPressMessage(idx) {
 }
 
 function KeyOnMessage(idx) {
-    this.idx = data;
+    this.idx = idx;
 }
 
 function KeyOffMessage(idx) {
