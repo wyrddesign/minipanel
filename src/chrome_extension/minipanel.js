@@ -80,12 +80,12 @@ class MiniPanel {
         
         // Wait for the Arduino to reset
         await sleep(3000);
-        await serial.send(new ProbeMessage());
+        await serial.send(new ProbeMessage(MSG_PROBE_QUERY_VERSION));
         const {value} = await serial.receive().next();
     
-        // Return true if a MiniPanel was found
+        // Return the MiniPanel version if found
         if (value instanceof ProbeMessage) {
-            return true;
+            return value.version;
         } else {
             serial.close();
             return false;
@@ -93,8 +93,11 @@ class MiniPanel {
     }
 
     static async fromSerialPort(serialPort) {
-        if (serialPort && await this.probe(serialPort)) {
-            return new MiniPanel(serialPort);
+        if (serialPort) {
+            const version = await this.probe(serialPort);
+            if (version) {
+                return new MiniPanel(version, serialPort);
+            }
         }
     }
 
