@@ -5,6 +5,9 @@ function sleep(ms) {
 class MiniPanelSerial {
     constructor(serialPort) {
         this.serialPort = serialPort;
+        // Allow the readers and writers to be cancelled
+        this.reader = undefined;
+        this.writer = undefined;
     }
     
     async open() {
@@ -12,9 +15,10 @@ class MiniPanelSerial {
     }
 
     async send(message) {
-        const writer = this.serialPort.writable.getWriter();
-        await writer.write(dumpMessage(message));
-        writer.releaseLock();
+        this.writer = this.serialPort.writable.getWriter();
+        await this.writer.write(dumpMessage(message));
+        this.writer.releaseLock();
+        this.writer = undefined;
     }
 
     async *receive() {
@@ -25,11 +29,15 @@ class MiniPanelSerial {
     
         try {
             while(this.serialPort.readable) {
-                reader = this.serialPort.readable.getReader();   
-                const { value, done } = await reader.read();
+                this.reader = this.serialPort.readable.getReader();   
+                const { value, done } = await this.reader.read();
     
                 // Release the lock before yielding a value in case the iterator is never used again
-                reader.releaseLock();
+                this.reader.releaseLock();
+                this.reader = undefined;
+                if (done || !value) {
+                    break;
+                }
                 bytes.push(...value);
                 while(bytes.length) {
                     const byte = bytes.shift();
@@ -38,18 +46,21 @@ class MiniPanelSerial {
                         yield value;
                     }
                 }
-                if (done) {
-                    break;
-                }
             }
         } finally {
-            if (reader) {
-                reader.releaseLock();
+            if (this.reader) {
+                this.reader.releaseLock();
             }
         }
     }
 
     async close() {
+        if (this.reader) {
+            await this.reader.cancel();
+        }
+        if (this.writer) {
+            await this.writer.cancel();
+        }
         await this.serialPort.close();
     }
 
