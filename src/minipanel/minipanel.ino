@@ -18,8 +18,8 @@ const uint8_t LED_PINS[NUM_BUTTONS] = {3, 5, 7};
 #ifdef MINIPANEL_V1_2_BTN
 const uint8_t VERSION = MSG_PROBE_V1;
 const uint8_t NUM_BUTTONS = 2;
-const uint8_t SWITCH_PINS[NUM_BUTTONS] = {7, 5};
-const uint8_t LED_PINS[NUM_BUTTONS] = {8, 6};
+const uint8_t SWITCH_PINS[NUM_BUTTONS] = {6, 8};
+const uint8_t LED_PINS[NUM_BUTTONS] = {5, 7};
 #endif
 
 static uint8_t values[NUM_BUTTONS];
