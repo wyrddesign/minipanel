@@ -5,13 +5,19 @@ const MSG_TYPE_KEY_ON =             0x02;
 const MSG_TYPE_KEY_OFF =            0x03;
 const MSG_TYPE_KEY_MODE =           0x04;
 
+const MSG_PROBE_QUERY_VERSION =     0x00;
+const MSG_PROBE_V1 =                0x01;
+const MSG_PROBE_V2 =                0x02;
+
 const MSG_KEY_MODE_SINGLE_KEY =     0x00;
 const MSG_KEY_MODE_MULTI_KEY =      0x01;
 
 function parseMessage(type, data) {
     switch(type) {
         case MSG_TYPE_PROBE:
-            return new ProbeMessage();
+            const version = data & 0xf;
+            const numButtons = data & 0x10;
+            return new ProbeMessage(version, numButtons);
         case MSG_TYPE_KEY_PRESS:
             return new KeyPressMessage(data);
         case MSG_TYPE_KEY_ON:
@@ -32,7 +38,7 @@ function dump(type, data) {
 function dumpMessage(message) {
     switch(true) {
         case message instanceof ProbeMessage:
-            return dump(MSG_TYPE_PROBE, 0x0);
+            return dump(MSG_TYPE_PROBE, message.version);
         case message instanceof KeyPressMessage:
             return dump(MSG_TYPE_KEY_PRESS, message.idx);
         case message instanceof KeyOnMessage:
@@ -48,7 +54,9 @@ function dumpMessage(message) {
     }
 }
 
-function ProbeMessage() {
+function ProbeMessage(version, numButtons) {
+    this.version = version;
+    this.numButtons = numButtons;
 }
 
 function KeyPressMessage(idx) {
