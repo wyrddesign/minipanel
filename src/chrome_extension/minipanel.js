@@ -95,9 +95,13 @@ class MiniPanel {
         return await this.fromSerialPort(await navigator.serial.requestPort({filters: this.deviceFilters}));
     }
 
-    static async create() {
-        let miniPanel = await this.fromStorage();
-        if (!miniPanel) {
+    static async get(options) {
+        const {shouldPromptUser, shouldUseCached} = options;
+        let miniPanel;
+        if (shouldUseCached) {
+            miniPanel = await this.fromStorage();
+        }
+        if (!miniPanel && shouldPromptUser) {
             miniPanel = await this.fromUser();
             await miniPanelStorage.set(miniPanel);
         }
@@ -107,7 +111,23 @@ class MiniPanel {
         return miniPanel;
     }
 
-    constructor(serialPort) {
+    static async *getForever(options) {
+        while(true) {
+            try {
+                yield await this.get(options);
+            } catch(e) {
+                if (e instanceof DOMException) {
+                    // The panel has disconnected
+                    return;
+                } else {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    constructor(version, serialPort) {
+        this.version = version;
         this.serial = new MiniPanelSerial(serialPort);
     }
 
