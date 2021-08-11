@@ -101,7 +101,7 @@ class MiniPanel {
     static async fromStorage() {
         return await miniPanelStorage.get();
     }
-
+    
     static async fromUser() {
         return await this.fromSerialPort(await navigator.serial.requestPort({filters: this.deviceFilters}));
     }
@@ -155,14 +155,23 @@ class MiniPanel {
     }
 
     async listenForever(callback) {
-        for await (const message of this.serial.receive()) {
-            if (message) {
-                // Let the callback run asynchronously so that new messages aren't blocked.
-                callback(message).then((message) => {
-                    if (message) {
-                        this.serial.send(message);
-                    }
-                });
+        try {
+            for await (const message of this.serial.receive()) {
+                if (message) {
+                    // Let the callback run asynchronously so that new messages aren't blocked.
+                    callback(message).then((message) => {
+                        if (message) {
+                            this.serial.send(message);
+                        }
+                    });
+                }
+            }
+        } catch(e) {
+            if (e instanceof DOMException) {
+                // The panel has disconnected
+                return;
+            } else {
+                throw e;
             }
         }
     }
