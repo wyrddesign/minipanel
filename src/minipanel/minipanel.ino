@@ -57,7 +57,8 @@ void toggleKey(uint8_t idx, bool isOn) {
 
 void onProbe(Message *msg) {
     sending->type = MSG_TYPE_PROBE;
-    sending->data = VERSION;
+    // Send the version in the lower bits and the number of buttons in the higher bits.
+    sending->data = VERSION | 0x10 + NUM_BUTTONS;
     sndMessage(sending);
 }
 
