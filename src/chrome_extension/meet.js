@@ -84,9 +84,7 @@ async function listenForever() {
     // Order these left to right, the same as in the Meet UI
     const deviceMap = [microphone, camera];
 
-    // TODO - get forever instead
-    let miniPanel = await MiniPanel.get();
-    if (miniPanel) {
+    for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
         miniPanel.setKeyModeMultiKey();
 
         // Set the initial states
