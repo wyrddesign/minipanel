@@ -2,28 +2,22 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function* nodeAvailable(filterCallback) {
+async function* nodeAvailable(filter) {
     let lastAddedNode = undefined;
     while(true) {
         if (lastAddedNode && lastAddedNode.parentNode) {
-            yield Promise.resolve(lastAddedNode);
+            yield Promise.resolve({node: lastAddedNode, isNew: false});
         } else {
             yield new Promise((resolve, reject) => {
                 var observer = new MutationObserver((mutations, mutationObserver) => {
                     mutations.forEach((mutation) => {
                         mutation.addedNodes.forEach((node) => {
-                            if (filterCallback(node)) {
+                            if (filter(node)) {
                                 mutationObserver.disconnect();
                                 lastAddedNode = node;
-                                resolve(node);
+                                resolve({node: lastAddedNode, isNew: true});
                             }
                         });
-                        // mutation.removedNodes.forEach((node) => {
-                        //     if (filterCallback(node)) {
-                        //         mutationObserver.disconnect();
-                        //         lastAddedNode = undefined;
-                        //     }
-                        // });
                     });
                 });
                 observer.observe(document, {childList: true, subtree: true});
@@ -39,13 +33,19 @@ class Muteable {
         this.labelMute = labelMute;
         this.labelUnmute = labelUnmute;
         // Meet uses the same node for muting and unmuting
-        this.nodeAvailableIter = nodeAvailable((node) => { 
+        this.nodeAvailableIter = nodeAvailable((node) => {
             const label = node.getAttribute && node.getAttribute("aria-label");
             return label && (label.includes(this.labelMute) || label.includes(this.labelUnmute));
         });
         // Start searching for the node
         this.nodeAvailableIter.next();
         this.isAwaitingAnimation = false;
+        // Create a callback for when the button itself is clicked
+        this.onButtonToggleCallback = undefined;
+    }
+
+    onButtonToggle(callback) {
+        this.onButtonToggleCallback = callback;
     }
 
     async getButton() {
@@ -92,6 +92,8 @@ async function listenForever() {
             const isMuted = await device.toggle();
             miniPanel.send(new Message(isMuted ? MSG_TYPE_KEY_ON : MSG_TYPE_KEY_OFF, idx));
         }
+
+        for await (const )
 
         await miniPanel.onKeyPressForever(async (idx) => {
             const device = deviceMap[idx];
