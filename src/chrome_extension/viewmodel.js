@@ -1,20 +1,38 @@
 class Property {
+    static NOT_SET = {};
+
     constructor(initialValue) {
-        this.value = initialValue;
+        if (typeof initialValue === "function") {
+            this.value = initialValue();
+        } else {
+            this.value = Promise.resolve(initialValue || Property.NOT_SET);
+        }
         this.listeners = [];
     }
+
     listen(listener) {
         this.listeners.push(listener);
+        this.value.then((value) => {
+            if (value !== Property.NOT_SET) {
+                // Send the listener a value when it's attached, but only if the value is ready
+                listener(value);
+            }
+        });
     }
+
     removeListener(listener) {
         this.listeners.remove(listener);
     }
+
     set(value) {
-        this.value = value;
-        this.listeners.forEach((listener) => listener(this.value));
+        this.value = Promise.resolve(value);
+        this.value.then((value) => {
+            this.listeners.forEach((listener) => listener(value));
+        });
     }
-    get() {
-        return this.value;
+
+    async get() {
+        return await this.value;
     }
 }
 
@@ -25,9 +43,9 @@ class ViewModel {
     static STATE_DISCONNECTED = 3;
 
     constructor() {
-        this.state = new Property({type: ViewModel.STATE_DISCONNECTED});
+        this.state = new Property(async () => await {type: ViewModel.STATE_DISCONNECTED});
         this.currentMiniPanel = new Property();
-        this.id = new Property();
+        this.id = new Property(async () => await miniPanelStorage.getId());
     }
     setConnecting() {
         this.state.set({type: ViewModel.STATE_CONNECTING});
@@ -36,12 +54,13 @@ class ViewModel {
         if (miniPanel) {
             this.state.set({type: ViewModel.STATE_CONNECTED, miniPanel: miniPanel});
             this.currentMiniPanel = miniPanel;
+            return miniPanel;
         } else {
             this.setDisconnected();
         }
     }
     async disconnect() {
-        const state = this.state.get();
+        const state = await this.state.get();
         if (state.type == ViewModel.STATE_CONNECTED) {
             this.state.set({type: ViewModel.STATE_DISCONNECTING});
             await state.miniPanel.close();
@@ -50,6 +69,11 @@ class ViewModel {
     setDisconnected() {
         this.state.set({type: ViewModel.STATE_DISCONNECTED});
         this.currentMiniPanel = undefined;
+    }
+    async setId(miniPanel) {
+        const id = await miniPanelStorage.set(miniPanel);
+        this.id.set(id);
+        return id;
     }
 }
 

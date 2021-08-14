@@ -6,7 +6,6 @@ const logNode = document.getElementById("log");
 const idNode = document.getElementById("id");
 
 viewModel.state.listen((value) => {
-    console.log(value);
     switch(value.type) {
         case ViewModel.STATE_CONNECTING:
             log("Probing for MiniPanel.");
@@ -33,21 +32,16 @@ viewModel.state.listen((value) => {
     }
 })
 
+viewModel.id.listen((value) => {
+    idNode.value = value;
+    connectNode.setEnabled(id ? true : false);
+});
+
 Node.prototype.setEnabled = function(shouldEnable) {
     if (shouldEnable) {
         this.removeAttribute("disabled");
     } else {
         this.setAttribute("disabled", "");       
-    }
-}
-
-async function populateMiniPanelId() {
-    const id = await miniPanelStorage.getId();
-    if (id) {
-        idNode.value = id;
-        connectNode.setEnabled(true);
-    } else {
-        connectNode.setEnabled(false);
     }
 }
 
@@ -69,20 +63,14 @@ function logReceive(text) {
     node.setAttribute("class", "receiveMessage");
 }
 
-async function saveToStorage(miniPanel) {
-    await miniPanelStorage.set(miniPanel);
-    await populateMiniPanelId();
-}
-
 chooseNode.addEventListener("click", async () => {
     viewModel.setConnecting();
     try {
         const miniPanel = viewModel.setConnected(await MiniPanel.get({shouldPromptUser: true, shouldUseCached: false}));
         if (miniPanel) {
-            await saveToStorage(miniPanel);
+            await viewModel.setId(miniPanel);
             log("This MiniPanel will now be used during Meet calls.");
             await miniPanel.close();
-            viewModel.setDisconnected();
         } else {
             log("MiniPanel not found.");
         }
@@ -117,5 +105,3 @@ clearLogNode.addEventListener("click", async () => {
         logNode.removeChild(logNode.firstChild);
     }
 });
-
-populateMiniPanelId();
