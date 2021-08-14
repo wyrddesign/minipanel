@@ -4,6 +4,7 @@ const chooseNode = document.getElementById("choose");
 const clearLogNode = document.getElementById("clearLog");
 const logNode = document.getElementById("log");
 const idNode = document.getElementById("id");
+const enableOnMeetNode = document.getElementById("enableOnMeet");
 
 viewModel.state.listen((value) => {
     switch(value.type) {
@@ -35,6 +36,14 @@ viewModel.state.listen((value) => {
 viewModel.id.listen((value) => {
     idNode.value = value;
     connectNode.setEnabled(id ? true : false);
+});
+
+viewModel.enableOnMeet.listen((value) => {
+    enableOnMeetNode.checked = value;
+})
+
+enableOnMeetNode.addEventListener("click", (e) => {
+    viewModel.setEnableOnMeet(e.target.checked);
 });
 
 Node.prototype.setEnabled = function(shouldEnable) {

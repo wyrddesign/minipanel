@@ -42,14 +42,19 @@ class ViewModel {
     static STATE_DISCONNECTING = 2
     static STATE_DISCONNECTED = 3;
 
+    static ENABLE_ON_MEET_KEY = "enableOnMeet";
+
     constructor() {
         this.state = new Property(async () => await {type: ViewModel.STATE_DISCONNECTED});
         this.currentMiniPanel = new Property();
         this.id = new Property(async () => await miniPanelStorage.getId());
+        this.enableOnMeet = new Property(async () => chrome.storage.local.getAsync(ViewModel.ENABLE_ON_MEET_KEY));
     }
+
     setConnecting() {
         this.state.set({type: ViewModel.STATE_CONNECTING});
     }
+
     setConnected(miniPanel) {
         if (miniPanel) {
             this.state.set({type: ViewModel.STATE_CONNECTED, miniPanel: miniPanel});
@@ -59,6 +64,7 @@ class ViewModel {
             this.setDisconnected();
         }
     }
+
     async disconnect() {
         const state = await this.state.get();
         if (state.type == ViewModel.STATE_CONNECTED) {
@@ -66,14 +72,20 @@ class ViewModel {
             await state.miniPanel.close();
         }
     }
+
     setDisconnected() {
         this.state.set({type: ViewModel.STATE_DISCONNECTED});
         this.currentMiniPanel = undefined;
     }
+
     async setId(miniPanel) {
         const id = await miniPanelStorage.set(miniPanel);
         this.id.set(id);
         return id;
+    }
+
+    async setEnableOnMeet(isEnabled) {
+        await chrome.storage.local.setAsync({[ViewModel.ENABLE_ON_MEET_KEY]: isEnabled});
     }
 }
 
