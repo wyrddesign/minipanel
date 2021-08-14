@@ -12,6 +12,10 @@
             "matches": ["https://meet.google.com/*"]
         },
         {
+            "js": ["viewmodel.js"],
+            "matches": ["https://meet.google.com/*"]
+        },
+        {
             "js": ["message.js"],
             "matches": ["https://meet.google.com/*"]
         },

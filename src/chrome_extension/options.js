@@ -5,7 +5,33 @@ const clearLogNode = document.getElementById("clearLog");
 const logNode = document.getElementById("log");
 const idNode = document.getElementById("id");
 
-let currentMiniPanel;
+viewModel.state.listen((value) => {
+    console.log(value);
+    switch(value.type) {
+        case ViewModel.STATE_CONNECTING:
+            log("Probing for MiniPanel.");
+            connectNode.setEnabled(false);
+            disconnectNode.setEnabled(false);
+            chooseNode.setEnabled(false);
+            clearLogNode.setEnabled(false);
+            break;
+        case ViewModel.STATE_CONNECTED:
+            const miniPanel = value.miniPanel;
+            log("MiniPanel v" + miniPanel.version + " with " + miniPanel.numButtons + " buttons found.");
+            connectNode.setEnabled(false);
+            disconnectNode.setEnabled(true);
+            chooseNode.setEnabled(false);
+            clearLogNode.setEnabled(true);
+            break;
+        case ViewModel.STATE_DISCONNECTED:
+            log("MiniPanel disconnected.");
+            connectNode.setEnabled(true);
+            disconnectNode.setEnabled(false);
+            chooseNode.setEnabled(true);
+            clearLogNode.setEnabled(false);
+            break;
+    }
+})
 
 Node.prototype.setEnabled = function(shouldEnable) {
     if (shouldEnable) {
@@ -43,46 +69,32 @@ function logReceive(text) {
     node.setAttribute("class", "receiveMessage");
 }
 
-function logInfo(miniPanel) {
-    log("MiniPanel v" + miniPanel.version + " with " + miniPanel.numButtons + " buttons     found.");
-}
-
 async function saveToStorage(miniPanel) {
     await miniPanelStorage.set(miniPanel);
     await populateMiniPanelId();
 }
 
 chooseNode.addEventListener("click", async () => {
-    chooseNode.setEnabled(false);
-    connectNode.setEnabled(false);
-    log("Probing for MiniPanel.");
+    viewModel.setConnecting();
     try {
-        miniPanel = await MiniPanel.get({shouldPromptUser: true, shouldUseCached: false});
+        const miniPanel = viewModel.setConnected(await MiniPanel.get({shouldPromptUser: true, shouldUseCached: false}));
         if (miniPanel) {
-            disconnectNode.setEnabled(true);
-            logInfo(miniPanel);
             await saveToStorage(miniPanel);
             log("This MiniPanel will now be used during Meet calls.");
             await miniPanel.close();
-            log("MiniPanel disconnected.");
-            disconnectNode.setEnabled(false);
+            viewModel.setDisconnected();
         } else {
             log("MiniPanel not found.");
         }
     } finally {
-        miniPanel = undefined;
-        connectNode.setEnabled(true);
-        chooseNode.setEnabled(true);
+        viewModel.setDisconnected();
     }
 });
 
 connectNode.addEventListener("click", async () => {
-    chooseNode.setEnabled(false);
-    connectNode.setEnabled(false);
-    log("Probing for MiniPanel.");
-    for await (miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
-        disconnectNode.setEnabled(true);
-        logInfo(miniPanel);
+    viewModel.setConnecting();
+    for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
+        viewModel.setConnected(miniPanel);
         logSend("Setting single key mode.\n");
         await miniPanel.setKeyModeSingleKey();
         await miniPanel.listenForever(async (message) => {
@@ -92,18 +104,12 @@ connectNode.addEventListener("click", async () => {
                 return new KeyOnMessage(message.idx);            
             }    
         });
-        disconnectNode.setEnabled(false);
-        miniPanel = undefined;
-        log("MiniPanel disconnected.");
+        viewModel.setDisconnected();
     }
-    connectNode.setEnabled(true);
-    chooseNode.setEnabled(true);
 });
 
 disconnectNode.addEventListener("click", async () => {
-    if (miniPanel) {
-        await miniPanel.close();
-    }
+    await viewModel.disconnect();
 });
 
 clearLogNode.addEventListener("click", async () => {
