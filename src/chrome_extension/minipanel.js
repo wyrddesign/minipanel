@@ -32,7 +32,6 @@ class MiniPanelSerial {
         const bytes = [];
         const messageParser = parseMessages();
         messageParser.next();
-        let reader;
     
         try {
             while(this.serialPort.readable) {
@@ -156,11 +155,11 @@ class MiniPanel {
     }
 
     async setKeyModeMultiKey() {
-        await this.serial.send(new KeyModeMessage(MSG_KEY_MODE_MULTI_KEY));
+        await this.send(new KeyModeMessage(MSG_KEY_MODE_MULTI_KEY));
     }
 
     async setKeyModeSingleKey() {
-        await this.serial.send(new KeyModeMessage(MSG_KEY_MODE_SINGLE_KEY));
+        await this.send(new KeyModeMessage(MSG_KEY_MODE_SINGLE_KEY));
     }
 
     async send(message) {
