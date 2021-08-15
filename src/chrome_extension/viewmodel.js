@@ -42,13 +42,18 @@ class ViewModel {
     static STATE_DISCONNECTING = 2
     static STATE_DISCONNECTED = 3;
 
+    static CURRENT_MINIPANEL_ID_KEY = "miniPanelId";
     static ENABLE_ON_MEET_KEY = "enableOnMeet";
 
     constructor() {
         this.state = new Property(async () => await {type: ViewModel.STATE_DISCONNECTED});
         this.currentMiniPanel = new Property();
-        this.id = new Property(async () => await miniPanelStorage.getId());
-        this.enableOnMeet = new Property(async () => chrome.storage.local.getAsync(ViewModel.ENABLE_ON_MEET_KEY));
+
+        this.id = new Property(async () => await chrome.storage.local.getAsync(ViewModel.CURRENT_MINIPANEL_ID_KEY));
+        this.id.listen((value) => chrome.storage.local.setAsync({[this.key]: value}));    
+
+        this.enableOnMeet = new Property(async () => await chrome.storage.local.getAsync(ViewModel.ENABLE_ON_MEET_KEY));
+        this.enableOnMeet.listen((value) => chrome.storage.local.setAsync({[ViewModel.ENABLE_ON_MEET_KEY]: value}));
     }
 
     setConnecting() {
@@ -78,14 +83,31 @@ class ViewModel {
         this.currentMiniPanel = undefined;
     }
 
+    createId(info) {
+        const {usbProductId, usbVendorId} = info;
+        return usbProductId + ":" + usbVendorId;
+    }
+
     async setId(miniPanel) {
-        const id = await miniPanelStorage.set(miniPanel);
-        this.id.set(id);
-        return id;
+        if (miniPanel) {
+            return await this.id.set(this.createId(miniPanel.serial.getInfo()));
+        }
     }
 
     async setEnableOnMeet(isEnabled) {
-        await chrome.storage.local.setAsync({[ViewModel.ENABLE_ON_MEET_KEY]: isEnabled});
+        return await this.enableOnMeet.set(isEnabled);
+    }
+
+    async getMiniPanelFromId() {
+        const id = await this.id.get();
+        if (id) {
+            const serialPorts = await navigator.serial.getPorts();
+            for (const serialPort of serialPorts) {
+                if (id === this.createId(serialPort.getInfo())) {
+                    return MiniPanel.fromSerialPort(serialPort);
+                }
+            }
+        }
     }
 }
 

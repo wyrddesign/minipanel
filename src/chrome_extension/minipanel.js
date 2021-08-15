@@ -111,7 +111,7 @@ class MiniPanel {
     }
 
     static async fromStorage() {
-        return await miniPanelStorage.get();
+        return await viewModel.getMiniPanelFromId();
     }
     
     static async fromUser() {
@@ -126,7 +126,7 @@ class MiniPanel {
         }
         if (!miniPanel && shouldPromptUser) {
             miniPanel = await this.fromUser();
-            await miniPanelStorage.set(miniPanel);
+            await viewModel.setId(miniPanel);
         }
         if (!miniPanel) {
             throw new Error("MiniPanel not available.");
