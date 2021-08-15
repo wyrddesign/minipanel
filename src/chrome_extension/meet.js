@@ -32,8 +32,6 @@ async function* findElementByFilter(filter, onAdded, onRemoved) {
     }
 }
 
-class NoButtonFoundException extends Error {}
-
 class Muteable {
     constructor(labelMute, labelUnmute) {
         this.labelMute = labelMute;
