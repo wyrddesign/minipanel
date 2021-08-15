@@ -1,6 +1,13 @@
 section {
     padding: 1ch;
 }
+input[type=checkbox] {
+    display: inline;
+    margin-right: 2ch;
+    width: 2.5ch;
+    height: 2.5ch;
+    vertical-align: middle;
+}
 button.begin {
     background-color:skyblue;
 }
@@ -23,7 +30,7 @@ button:disabled {
 }
 label {
     padding: 0;
-    font-size: 1.5em;
+    font-size: 1.25em;
 }
 section input {
     display: block;
