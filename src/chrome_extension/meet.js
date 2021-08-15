@@ -68,8 +68,7 @@ class Muteable {
         return value;
     }
 
-    async isMuted() {
-        const button = await this.getButton();
+    isMuted(button) {
         return button.getAttribute("aria-label").includes(this.labelUnmute);
     }
 
