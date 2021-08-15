@@ -2,12 +2,15 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function* nodeAvailable(filter) {
+async function* findElementByFilter(filter, onAdded, onRemoved) {
     let lastAddedNode = undefined;
     while(true) {
         if (lastAddedNode && lastAddedNode.parentNode) {
-            yield Promise.resolve({node: lastAddedNode, isNew: false});
+            yield Promise.resolve(lastAddedNode);
         } else {
+            if (onRemoved && lastAddedNode) {
+                onRemoved(lastAddedNode);
+            }
             yield new Promise((resolve, reject) => {
                 var observer = new MutationObserver((mutations, mutationObserver) => {
                     mutations.forEach((mutation) => {
@@ -15,7 +18,10 @@ async function* nodeAvailable(filter) {
                             if (filter(node)) {
                                 mutationObserver.disconnect();
                                 lastAddedNode = node;
-                                resolve({node: lastAddedNode, isNew: true});
+                                if (onAdded) {
+                                    onAdded(lastAddedNode);
+                                }
+                                resolve(lastAddedNode);
                             }
                         });
                     });
