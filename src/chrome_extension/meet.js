@@ -36,20 +36,31 @@ class Muteable {
     constructor(labelMute, labelUnmute) {
         this.labelMute = labelMute;
         this.labelUnmute = labelUnmute;
-        // Meet uses the same node for muting and unmuting
-        this.nodeAvailableIter = nodeAvailable((node) => {
-            const label = node.getAttribute && node.getAttribute("aria-label");
-            return label && (label.includes(this.labelMute) || label.includes(this.labelUnmute));
-        });
+
+        this.findElementByFilterIter = findElementByFilter(
+            (element) => {
+                // Meet uses the same node for muting and unmuting
+                const label = element.getAttribute && element.getAttribute("aria-label");
+                return label && (label.includes(this.labelMute) || label.includes(this.labelUnmute));
+            },
+            (element) => element.addEventListener("click", () => this.onClick(element)),
+            (element) => element.removeEventListener("click", () => this.onClick(element)));
         // Start searching for the node
-        this.nodeAvailableIter.next();
-        this.isAwaitingAnimation = false;
-        // Create a callback for when the button itself is clicked
-        this.onButtonToggleCallback = undefined;
+        this.findElementByFilterIter.next();
+
+        this.isToggling = false;
+        this.onClickListener = undefined;
     }
 
-    onButtonToggle(callback) {
-        this.onButtonToggleCallback = callback;
+    // A callback for when the button itself is clicked
+    onClick(button) {
+        if (this.onClickListener && !this.isToggling) {
+            this.onClickListener(this.isMuted(button));
+        }
+    }
+
+    setOnClickListener(listener) {
+        this.onClickListener = listener;
     }
 
     async getButton() {
