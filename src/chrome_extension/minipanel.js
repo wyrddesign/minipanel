@@ -159,16 +159,11 @@ class MiniPanel {
         await this.serial.send(message);
     }
 
-    async listenForever(callback) {
+    async *receive() {
         try {
             for await (const message of this.serial.receive()) {
                 if (message) {
-                    // Let the callback run asynchronously so that new messages aren't blocked.
-                    callback(message).then((message) => {
-                        if (message) {
-                            this.serial.send(message);
-                        }
-                    });
+                    yield message;
                 }
             }
         } catch(e) {
@@ -179,18 +174,6 @@ class MiniPanel {
                 throw e;
             }
         }
-    }
-
-    async onKeyPressForever(callback) {
-        await this.listenForever(async (message) => {
-            if (message instanceof KeyPressMessage) {
-                const idx = message.idx;
-                const sendMessage = await callback(idx);
-                if (sendMessage) {
-                    return sendMessage;
-                }
-            }
-        });
     }
 
     async close() {
