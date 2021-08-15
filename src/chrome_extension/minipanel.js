@@ -3,13 +3,19 @@ function sleep(ms) {
 }
 
 class MiniPanelSerial {
+
+    static logger = {
+        onSend: () => {},
+        onReceive: () => {},
+    };
+
     constructor(serialPort) {
         this.serialPort = serialPort;
         // Allow the readers and writers to be cancelled
         this.reader = undefined;
         this.writer = undefined;
     }
-    
+
     async open() {
         await this.serialPort.open({baudRate: 9600});
     }
@@ -18,6 +24,7 @@ class MiniPanelSerial {
         this.writer = this.serialPort.writable.getWriter();
         await this.writer.write(dumpMessage(message));
         this.writer.releaseLock();
+        MiniPanelSerial.logger.onSend(message);
         this.writer = undefined;
     }
 
@@ -43,6 +50,7 @@ class MiniPanelSerial {
                     const byte = bytes.shift();
                     const {value} = messageParser.next(byte);
                     if (value) {
+                        MiniPanelSerial.logger.onReceive(value);
                         yield value;
                     }
                 }

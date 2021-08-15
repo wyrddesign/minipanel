@@ -6,6 +6,11 @@ const logNode = document.getElementById("log");
 const idNode = document.getElementById("id");
 const enableOnMeetNode = document.getElementById("enableOnMeet");
 
+MiniPanelSerial.logger = {
+    onSend: (message) => logSend(message.constructor.name + " " + JSON.stringify(message, undefined, 1)),
+    onReceive: (message) => logReceive(message.constructor.name + " " + JSON.stringify(message, undefined, 1))
+};
+
 viewModel.state.listen((value) => {
     switch(value.type) {
         case ViewModel.STATE_CONNECTING:
