@@ -87,32 +87,57 @@ class Muteable {
     }
 }
 
-async function listenForever() {
-    const camera = new Muteable("Turn off camera", "Turn on camera");
-    const microphone = new Muteable("Turn off microphone", "Turn on microphone");
+class MeetExtension {
+    constructor() {
+        const camera = new Muteable("Turn off camera", "Turn on camera");
+        const microphone = new Muteable("Turn off microphone", "Turn on microphone");
+        
+        // Order these left to right, the same as in the Meet UI
+        this.devices = [microphone, camera];
+    }
 
-    // Order these left to right, the same as in the Meet UI
-    const deviceMap = [microphone, camera];
-
-    for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
-        miniPanel.setKeyModeMultiKey();
-
-        // Set the initial states
-        for (const [idx, device] in deviceMap.entries()) {
-            const isMuted = await device.toggle();
-            miniPanel.send(new Message(isMuted ? MSG_TYPE_KEY_ON : MSG_TYPE_KEY_OFF, idx));
+    async listenToMiniPanel(miniPanel) {
+        for await (const message of miniPanel.receive()) {
+            if (message instanceof KeyPressMessage) {
+                const device = this.devices[message.idx];
+                if (device) {
+                    const {isMuted, isToggling} = await device.toggle();
+                    if (!isToggling) {
+                        await miniPanel.sendKeyToggle(message.idx, isMuted);
+                    }
+                }
+            }
         }
+    };
 
-        for await (const )
+    async listenToDevices(miniPanel) {
+        for (const idx in this.devices) {
+            const device = this.devices[idx];
+            if (device) {
+                device.setOnClickListener((isMuted) => miniPanel.sendKeyToggle(idx, isMuted));
+            }
+        }
+    }
 
-        await miniPanel.onKeyPressForever(async (idx) => {
-            const device = deviceMap[idx];
-            if (device && !device.isToggling()) {
-                const isMuted = await device.toggle();
-                return new Message(isMuted ? MSG_TYPE_KEY_ON : MSG_TYPE_KEY_OFF, idx);
-            }                
-        });
+    async listen() {
+        const enableOnMeet = await viewModel.enableOnMeet.get();
+        if (enableOnMeet) {
+            for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
+                miniPanel.setKeyModeMultiKey();
+                this.listenToMiniPanel(miniPanel);
+                this.listenToDevices(miniPanel);
+            }
+        }
     }
 }
 
-listenForever();
+MiniPanel.prototype.sendKeyToggle = function(idx, isEnabled) {
+    this.send(new Message(isEnabled ? MSG_TYPE_KEY_ON : MSG_TYPE_KEY_OFF, parseInt(idx)));
+}
+
+MiniPanelSerial.logger = {
+    onSend: (message) => console.log(message.constructor.name, message),
+    onReceive: (message) => console.log(message.constructor.name, message)
+};
+
+new MeetExtension().listen();
