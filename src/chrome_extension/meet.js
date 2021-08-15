@@ -73,22 +73,18 @@ class Muteable {
         return button.getAttribute("aria-label").includes(this.labelUnmute);
     }
 
-    isToggling() {
-        return this.isAwaitingAnimation;
-    }
-
-    /**
-     * Mute this device if it is unmuted or unmute it if it was muted.
-     * 
-     * @returns whether this device is currently muted after the toggle
-     */
+    // Mute this device if it is unmuted or unmute it if it was muted.
     async toggle() {
-        const button = await this.getButton();
-        button.click();
-        this.isAwaitingAnimation = true;
-        await sleep(200);
-        this.isAwaitingAnimation = false;
-        return this.isMuted();
+        if (!this.isToggling) {
+            this.isToggling = true;
+            const button = await this.getButton();
+            button.click();
+            await sleep(200);
+            this.isToggling = false;
+            return {isToggling: false, isMuted: this.isMuted(button)};
+        } else {
+            return {isToggling: true};
+        }
     }
 }
 
