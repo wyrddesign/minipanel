@@ -140,7 +140,7 @@ class MiniPanel {
             } catch(e) {
                 if (e instanceof DOMException) {
                     // The panel has disconnected
-                    return;
+                    continue;
                 } else {
                     throw e;
                 }
