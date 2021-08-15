@@ -97,15 +97,12 @@ connectNode.addEventListener("click", async () => {
     viewModel.setConnecting();
     for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
         viewModel.setConnected(miniPanel);
-        logSend("Setting single key mode.\n");
         await miniPanel.setKeyModeSingleKey();
-        await miniPanel.listenForever(async (message) => {
-            logReceive(message.constructor.name + ": " + JSON.stringify(message));
+        for await (const message of miniPanel.receive()) {
             if (message instanceof KeyPressMessage) {
-                logSend("KeyOnMessage: " + message.idx);
-                return new KeyOnMessage(message.idx);            
-            }    
-        });
+                miniPanel.send(new KeyOnMessage(message.idx));            
+            }
+        }
         viewModel.setDisconnected();
     }
 });
