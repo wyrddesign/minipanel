@@ -64,7 +64,7 @@ class Muteable {
     }
 
     async getButton() {
-        const {value} = await this.nodeAvailableIter.next();
+        const {value} = await this.findElementByFilterIter.next();
         return value;
     }
 
