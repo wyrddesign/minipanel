@@ -122,7 +122,7 @@ class MeetExtension {
     async listen() {
         const enableOnMeet = await viewModel.enableOnMeet.get();
         if (enableOnMeet) {
-            for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
+            for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: false, shouldUseCached: true})) {
                 miniPanel.setKeyModeMultiKey();
                 this.listenToMiniPanel(miniPanel);
                 this.listenToDevices(miniPanel);
