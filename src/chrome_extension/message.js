@@ -63,10 +63,6 @@ function KeyPressMessage(idx) {
     this.idx = idx;
 }
 
-function KeyPressMessage(idx) {
-    this.idx = idx;
-}
-
 function KeyOnMessage(idx) {
     this.idx = idx;
 }
