@@ -64,6 +64,7 @@ function log(text) {
     node.setAttribute("class", "logMessage");
     node.textContent = text;
     logNode.appendChild(node);
+    node.scrollIntoView();
     return node;
 }
 

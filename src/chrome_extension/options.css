@@ -43,6 +43,8 @@ section button {
 #log {
     margin: 0;
     padding: 0;
+    overflow: auto;
+    max-height: calc(100vh - 50vh);
 }
 .logMessage, .sendMessage, .receiveMessage {
     font-family: monospace;
