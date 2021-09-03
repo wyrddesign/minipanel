@@ -2,33 +2,66 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function* findElementByFilter(filter, onAdded, onRemoved) {
-    let lastAddedNode = undefined;
-    while(true) {
-        if (lastAddedNode && lastAddedNode.parentNode) {
-            yield Promise.resolve(lastAddedNode);
-        } else {
-            if (onRemoved && lastAddedNode) {
-                onRemoved(lastAddedNode);
+// Wait for a promise from any of the given generators to resolve, then re-emit its result with the generator's key.
+async function *select(generators) {
+    // The mapped generators should yield the user-supplied key, their index and the promise result.
+    const mapped = [];
+    let mapGenerator = (idx, key) => {
+        return async function*() {
+            for await (const result of generators[key]) {
+                yield {idx: idx, key: key, result: result};
             }
-            yield new Promise((resolve, reject) => {
-                var observer = new MutationObserver((mutations, mutationObserver) => {
-                    mutations.forEach((mutation) => {
-                        mutation.addedNodes.forEach((node) => {
-                            if (filter(node)) {
-                                mutationObserver.disconnect();
-                                lastAddedNode = node;
-                                if (onAdded) {
-                                    onAdded(lastAddedNode);
-                                }
-                                resolve(lastAddedNode);
-                            }
-                        });
-                    });
-                });
-                observer.observe(document, {childList: true, subtree: true});
-            });
         }
+    };
+    let idx = 0;
+    for (const key in generators) {
+        mapped.push(mapGenerator(idx, key)());
+        idx += 1;
+    }
+
+    const promises = mapped.map(generator => generator.next());
+    let lastResolvedIdx = undefined;
+    while(true) {
+        if (lastResolvedIdx !== undefined) {
+            promises[lastResolvedIdx] = mapped[lastResolvedIdx].next();
+        }
+        const {value, done} = await Promise.race(promises);
+        const {idx, key, result} = value;
+        lastResolvedIdx = idx;
+        if (done) {
+            return {key: key, result: result};
+        } else {
+            yield {key: key, result: result};
+        }
+    }
+}
+
+function *liveElementObserver(isNode) {
+    while(true) {
+        yield new Promise((resolve, reject) => {
+            var observer = new MutationObserver((mutations, mutationObserver) => {
+                let added, removed;
+                for (const mutation of mutations) {
+                    addedLoop: for (const addedNode of mutation.addedNodes) {
+                        if (isNode(addedNode)) {
+                            added = addedNode;
+                            break addedLoop;
+                        }
+                    }
+                    removedLoop: for (const removedNode of mutation.removedNodes) {
+                        if (isNode(removedNode)) {
+                            removed = removedNode;
+                            break removedLoop;
+                        }
+                    }
+                }
+                if (added || removed) {
+                    mutationObserver.disconnect();
+                    resolve({added: added, removed: removed});
+                }
+            });
+            observer.observe(document, {childList: true, subtree: true});
+        });
     }
 }
 
@@ -36,51 +69,69 @@ class Muteable {
     constructor(labelMute, labelUnmute) {
         this.labelMute = labelMute;
         this.labelUnmute = labelUnmute;
-
-        this.findElementByFilterIter = findElementByFilter(
-            (element) => {
-                // Meet uses the same node for muting and unmuting
-                const label = element.getAttribute && element.getAttribute("aria-label");
-                return label && (label.includes(this.labelMute) || label.includes(this.labelUnmute));
-            },
-            (element) => element.addEventListener("click", () => this.onClick(element)),
-            (element) => element.removeEventListener("click", () => this.onClick(element)));
-        // Start searching for the node
-        this.findElementByFilterIter.next();
-
+        this.button = undefined;
         this.isToggling = false;
-        this.onClickListener = undefined;
+        this.clickResolve = undefined;
+        this.listenForButtons();
     }
 
-    // A callback for when the button itself is clicked
-    onClick(button) {
-        if (this.onClickListener && !this.isToggling) {
-            this.onClickListener(this.isMuted(button));
+    async onClickListener() {
+        if (!this.isToggling && this.clickResolve) {
+            this.clickResolve(await this.isMuted());
+            this.clickResolve = undefined;
         }
     }
 
-    setOnClickListener(listener) {
-        this.onClickListener = listener;
+    async *clicks() {
+        while(true) {
+            yield new Promise((resolve, reject) => {
+                this.clickResolve = resolve
+            });
+        }
     }
 
-    async getButton() {
-        const {value} = await this.findElementByFilterIter.next();
-        return value;
+    async listenForButtons() {
+        const buttonObserver = liveElementObserver((node) => {
+            // Meet uses the same node for muting and unmuting
+            const label = node.getAttribute && node.getAttribute("aria-label");
+            return label && (label.includes(this.labelMute) || label.includes(this.labelUnmute));
+        });
+        let buttonResolve, buttonReject, lastButton;
+        this.button = new Promise((resolve, reject) => {
+            buttonResolve = resolve;
+            buttonReject = reject;
+        });
+        for await (const {added} of buttonObserver) {
+            if (lastButton) {
+                lastButton.removeEventListener("click", () => this.onClickListener());
+                buttonReject();
+                this.button = new Promise((resolve, reject) => {
+                    buttonResolve = resolve;
+                    buttonReject = reject;
+                });
+            }
+            if (added) {
+                lastButton = added;
+                added.addEventListener("click", () => this.onClickListener());
+                buttonResolve(added);
+            }
+        }
     }
 
-    isMuted(button) {
+    async isMuted() {
+        const button = await this.button;
         return button.getAttribute("aria-label").includes(this.labelUnmute);
     }
 
     // Mute this device if it is unmuted or unmute it if it was muted.
     async toggle() {
+        const button = await this.button;
         if (!this.isToggling) {
             this.isToggling = true;
-            const button = await this.getButton();
             button.click();
             await sleep(200);
             this.isToggling = false;
-            return {isToggling: false, isMuted: this.isMuted(button)};
+            return {isToggling: false, isMuted: await this.isMuted()};
         } else {
             return {isToggling: true};
         }
@@ -89,43 +140,46 @@ class Muteable {
 
 class MeetExtension {
     constructor() {
-        const camera = new Muteable("Turn off camera", "Turn on camera");
-        const microphone = new Muteable("Turn off microphone", "Turn on microphone");
-        
+        const devices = [];
         // Order these left to right, the same as in the Meet UI
-        this.devices = [microphone, camera];
+        devices.push(new Muteable("Turn off microphone", "Turn on microphone"));
+        devices.push(new Muteable("Turn off camera", "Turn on camera"));
+        this.devices = devices;
     }
 
-    async listenToMiniPanel(miniPanel) {
-        for await (const message of miniPanel.receive()) {
-            if (message instanceof KeyPressMessage) {
-                const device = this.devices[message.idx];
-                if (device) {
-                    const {isMuted, isToggling} = await device.toggle();
-                    if (!isToggling) {
-                        await miniPanel.sendKeyToggle(message.idx, isMuted);
-                    }
-                }
-            }
-        }
-    };
-
-    async listenToDevices(miniPanel) {
-        for (const idx in this.devices) {
-            const device = this.devices[idx];
-            if (device) {
-                device.setOnClickListener((isMuted) => miniPanel.sendKeyToggle(idx, isMuted));
-            }
+    async *clicks() {
+        for await (const {key, result} of select(this.devices.map(d => d.clicks()))) {
+            yield {idx: key, isMuted: result};
         }
     }
 
-    async listen() {
+    async listen(viewModel) {
         const enableOnMeet = await viewModel.enableOnMeet.get();
         if (enableOnMeet) {
             for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: false, shouldUseCached: true})) {
+                // this.miniPanel = miniPanel;
                 miniPanel.setKeyModeMultiKey();
-                this.listenToMiniPanel(miniPanel);
-                this.listenToDevices(miniPanel);
+                // Wait for the UI or the button panel to be pressed
+                for await (const {key, result} of select({messages: miniPanel.receive(), clicks: this.clicks(miniPanel)})) {
+                    switch(key) {
+                        case "messages":
+                            const message = result;
+                            if (message instanceof KeyPressMessage) {
+                                const device = this.devices[message.idx];
+                                if (device) {
+                                    const {isMuted, isToggling} = await device.toggle();
+                                    if (!isToggling) {
+                                        await miniPanel.sendKeyToggle(message.idx, isMuted);
+                                    }
+                                }
+                            }
+                            break;
+                        case "clicks":
+                            const {idx, isMuted} = result;
+                            miniPanel.sendKeyToggle(idx, isMuted);
+                            break;
+                    }
+                }
             }
         }
     }
@@ -140,4 +194,4 @@ MiniPanelSerial.logger = {
     onReceive: (message) => console.log(message.constructor.name, message)
 };
 
-new MeetExtension().listen();
+new MeetExtension().listen(viewModel);
