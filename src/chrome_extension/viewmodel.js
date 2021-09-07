@@ -50,7 +50,7 @@ class ViewModel {
         this.currentMiniPanel = new Property();
 
         this.id = new Property(async () => await chrome.storage.local.getAsync(ViewModel.CURRENT_MINIPANEL_ID_KEY));
-        this.id.listen((value) => chrome.storage.local.setAsync({[this.key]: value}));    
+        this.id.listen((value) => chrome.storage.local.setAsync({[ViewModel.CURRENT_MINIPANEL_ID_KEY]: value}));    
 
         this.enableOnMeet = new Property(async () => await chrome.storage.local.getAsync(ViewModel.ENABLE_ON_MEET_KEY));
         this.enableOnMeet.listen((value) => chrome.storage.local.setAsync({[ViewModel.ENABLE_ON_MEET_KEY]: value}));
