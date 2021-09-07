@@ -156,7 +156,8 @@ class MeetExtension {
     async listen(viewModel) {
         const enableOnMeet = await viewModel.enableOnMeet.get();
         if (enableOnMeet) {
-            for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: false, shouldUseCached: true})) {
+            // The user must be prompted in order to get a list of devices
+            for await (const miniPanel of MiniPanel.getForever({shouldPromptUser: true, shouldUseCached: true})) {
                 // this.miniPanel = miniPanel;
                 miniPanel.setKeyModeMultiKey();
                 // Wait for the UI or the button panel to be pressed
