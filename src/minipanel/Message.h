@@ -19,9 +19,27 @@ const uint8_t MSG_KEY_MODE_SINGLE_KEY =   0x00;
 const uint8_t MSG_KEY_MODE_MULTI_KEY =    0x01;
 
 
+struct ProbeData {
+  uint8_t version;
+  uint8_t numButtons;
+};
+
 struct Message {
   uint8_t type;
-  uint8_t data;
+
+  union {
+    // Probe
+    ProbeData probe;
+
+    // KeyPress, KeyOn, KeyOff
+    uint8_t idx;
+
+    // KeyMode
+    uint8_t mode;
+
+    // Unsupported message type
+    uint8_t data;
+  };
 };
 
 enum class KeyMode {

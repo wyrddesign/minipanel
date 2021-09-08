@@ -1,10 +1,10 @@
 #include "Message.h"
 
 // The three button Arduino Nano-based minipanel. This was wired upside-down.
-// #define MINIPANEL_V1_3_BTN
+#define MINIPANEL_V1_3_BTN
 
 // The two button Arduino Nano-based minipanel.
-#define MINIPANEL_V1_2_BTN
+// #define MINIPANEL_V1_2_BTN
 
 // The two button Qt Py-based minipanel.
 // #define MINIPANEL_V2_2_BTN
@@ -12,8 +12,8 @@
 #ifdef MINIPANEL_V1_3_BTN
 const uint8_t VERSION = MSG_PROBE_V1;
 const uint8_t NUM_BUTTONS = 3;
-const uint8_t SWITCH_PINS[NUM_BUTTONS] = {2, 4, 6};
-const uint8_t LED_PINS[NUM_BUTTONS] = {3, 5, 7};
+const uint8_t SWITCH_PINS[NUM_BUTTONS] = {11, 9, 6};
+const uint8_t LED_PINS[NUM_BUTTONS] = {12, 10, 7};
 #endif
 #ifdef MINIPANEL_V1_2_BTN
 const uint8_t VERSION = MSG_PROBE_V1;
@@ -57,21 +57,21 @@ void toggleKey(uint8_t idx, bool isOn) {
 
 void onProbe(Message *msg) {
     sending->type = MSG_TYPE_PROBE;
-    // Send the version in the lower bits and the max button index in the higher bits.
-    sending->data = VERSION + ((NUM_BUTTONS - 1) << 4);
+    sending->probe.version = VERSION;
+    sending->probe.numButtons = NUM_BUTTONS;
     sndMessage(sending);
 }
 
 void onKeyOn(Message *msg) {
-  toggleKey(msg->data, true);
+  toggleKey(msg->idx, true);
 }
 
 void onKeyOff(Message *msg) {
-  toggleKey(msg->data, false);
+  toggleKey(msg->idx, false);
 }
 
 void onKeyMode(Message *msg) {
-  switch(msg->data) {
+  switch(msg->mode) {
     case MSG_KEY_MODE_SINGLE_KEY:
       keyMode = KeyMode::SingleKey;
       break;
@@ -103,7 +103,7 @@ void onMessage(Message *msg) {
 
 void awaitConnection() {
   while(1) {
-    if (rcvMessage(receiving, rcvState) && receiving->type == MSG_TYPE_PROBE && receiving->data == MSG_PROBE_QUERY_VERSION) {
+    if (rcvMessage(receiving, rcvState) && receiving->type == MSG_TYPE_PROBE && receiving->probe.version == MSG_PROBE_QUERY_VERSION) {
         // Send the version of this panel back
         onProbe(receiving);
         return;
@@ -147,9 +147,10 @@ void loop() {
   // Pack the pressed indices into a byte
   if (lastPressedIdx != -1) {
     for (uint8_t i=0; i<NUM_BUTTONS; i+=1) {
-      if (wasPressed[i]) {
+      if (wasPressed[i]) {    
+          toggleKey(i, true);
           sending->type = MSG_TYPE_KEY_PRESS;
-          sending->data = i;
+          sending->idx = i;
           sndMessage(sending);
       }
     }
